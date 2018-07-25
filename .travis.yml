@@ -8,6 +8,6 @@ language: generic
 script:
   - if [ "$TRAVIS_BRANCH" == "master" ]; then
     docker login -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD";
-    docker build . -t robertstettner/drone-codecov;
-    docker push robertstettner/drone-codecov;
+    docker build . -t robertstettner/drone-s3cache;
+    docker push robertstettner/drone-s3cache;
     fi

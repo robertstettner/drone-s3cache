@@ -18,7 +18,7 @@ folders:
   - folder2/foo
 ```
 
-- `bucket`: S3 bucket name. This can be configured in drone secrets as `DRONE_S3_CACHE_BUCKET_NAME`. Ensure drone has permissions to `get` and `put` objects in that bucket.
+- `bucket`: S3 bucket name. Ensure drone has permissions to `get` and `put` objects in that bucket.
 - `filename`: The filename to pull or push to S3. Default is `cache`.
 - `key`: The key to pull or push to S3. Default is `$DRONE_REPO/$DRONE_BRANCH`.
 
@@ -30,6 +30,7 @@ This plugin assumes you have Drone setup on an AWS EC2 instance, with an IAM ins
 pipeline:
   cache-pull:
     image: robertstettner/drone-s3cache
+    bucket: mybucket
     mode: pull
 
   build:
@@ -40,6 +41,7 @@ pipeline:
 
   cache-push:
     image: robertstettner/drone-s3cache
+    bucket: mybucket
     folders: node_modules
     mode: push
 ```
