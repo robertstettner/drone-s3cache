@@ -5,7 +5,7 @@ cache_bucket="${BUCKET:-$PLUGIN_BUCKET}"
 mode="${MODE:-$PLUGIN_MODE}"
 key="${PLUGIN_KEY:-$DRONE_REPO/$DRONE_BRANCH}"
 filename="${PLUGIN_FILENAME:-cache}"
-region="${AWS_REGION:-PLUGIN_REGION}"
+region="${AWS_REGION:-$PLUGIN_REGION}"
 
 set -e
 
@@ -25,8 +25,8 @@ case $mode in
     pull)
       echo "-- Pulling cache from S3..."
 
-      cd / && gof3r get -b $cache_bucket -k $key/$filename.tar \
-        --endpoint="s3-${region}.amazonaws.com" | tar -xf -
+      cd / && gof3r get -b $cache_bucket -k $key/$filename.tar" \
+        --endpoint="s3-$region.amazonaws.com" | tar -xf -
     ;;
     push)
       echo "-- Pushing cache to S3..."
@@ -39,7 +39,7 @@ case $mode in
       done
 
       tar -cf - $cdirs | gof3r put -b $cache_bucket -k $key/$filename.tar \
-        -m x-amz-server-side-encryption:AES256 --endpoint="s3-${region}.amazonaws.com"
+        -m x-amz-server-side-encryption:AES256 --endpoint="s3-$region.amazonaws.com"
     ;;
     *)
       tput setaf 1; echo "-- Supported modes:

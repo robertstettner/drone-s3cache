@@ -45,3 +45,17 @@ pipeline:
     folders: node_modules
     mode: push
 ```
+
+### Local Test
+
+```
+docker run -t --rm \
+  -e PLUGIN_BUCKET=mybucket \
+  -e PLUGIN_REGION=eu-central-1 \
+  -e DRONE_REPO=myorg/octocat \
+  -e DRONE_BRANCH=master \
+  -e PLUGIN_MODE=pull \
+  -v $(pwd):/app \
+  -w /app \
+  robertstettner/drone-s3cache
+```
