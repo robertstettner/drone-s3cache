@@ -10,12 +10,12 @@ region="${AWS_REGION:-$PLUGIN_REGION}"
 set -e
 
 if [[ -z "$cache_bucket" ]]; then
-  tput setaf 1; echo "-- Error: no bucket specified"
+  echo "-- Error: no bucket specified"
   exit 1
 fi
 
 if [[ -z "$region" ]]; then
-  tput setaf 1; echo "-- Error: no region specified"
+  echo "-- Error: no region specified"
   exit 1
 fi
 
@@ -42,7 +42,7 @@ case $mode in
         -m x-amz-server-side-encryption:AES256 --endpoint=s3-$region.amazonaws.com
     ;;
     *)
-      tput setaf 1; echo "-- Supported modes:
+      echo "-- Supported modes:
               pull - restore cache from S3.
               push - cache in S3.
             "
