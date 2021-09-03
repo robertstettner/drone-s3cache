@@ -1,13 +1,19 @@
 #!/usr/bin/env bash
+set -e
+
+env_file="${PLUGIN_ENV_FILE:-.env}"
+if [[ -f "${env_file}" ]]; then
+  source "${env_file}"
+fi
 
 folders="${FOLDERS:-$PLUGIN_FOLDERS}"
 cache_bucket="${BUCKET:-$PLUGIN_BUCKET}"
 mode="${MODE:-$PLUGIN_MODE}"
 key="${PLUGIN_KEY:-$DRONE_REPO/$DRONE_BRANCH}"
-filename="${PLUGIN_FILENAME:-cache}"
+keys=${PLUGIN_KEYS}
 region="${AWS_REGION:-$PLUGIN_REGION}"
-
-set -e
+overwrite="${PLUGIN_OVERWRITE:-"true"}"
+s3_full_path=$(echo "s3://${cache_bucket}/${key}.tar.gz" | envsubst)
 
 if [[ -z "$cache_bucket" ]]; then
   echo "-- Error: no bucket specified"
@@ -19,28 +25,43 @@ if [[ -z "$region" ]]; then
   exit 1
 fi
 
-set +e
-
 case $mode in
     pull)
       echo "-- Pulling cache from S3..."
 
-      cd / && gof3r get -b $cache_bucket -k $key/$filename.tar \
-        --endpoint=s3-$region.amazonaws.com | tar -xf -
+      if [[ -z ${keys} ]]; then
+        if aws --region=${region} s3 ls ${s3_full_path} > /dev/null 2>&1; then
+          echo "found in cache: ${s3_full_path}"
+          cd / && aws --region=${region} s3 cp ${s3_full_path} - | tar -xzf -
+        else
+          echo "${s3_full_path} doesn't exists"
+        fi
+      else
+        for key in $(echo ${keys} | sed "s/,/ /g"); do
+          s3_full_path=$(echo "s3://${cache_bucket}/${key}.tar.gz" | envsubst)
+          if aws --region=${region} s3 ls ${s3_full_path} > /dev/null 2>&1; then
+            echo "found in cache: ${s3_full_path}"
+            cd / && aws --region=${region} s3 cp ${s3_full_path} - | tar -xzf -
+            echo "-- S3 cache $mode done!"
+            exit 0
+          else
+            echo "${s3_full_path} doesn't exists"
+          fi
+        done
+      fi
     ;;
+
     push)
       echo "-- Pushing cache to S3..."
 
-      cdirs=""
-      for f in $(echo $folders | tr -d '[[:space:]]' | tr "," "\n"); do
-        if [ -d $PWD/$f ]; then
-          cdirs="$cdirs $PWD/$f"
-        fi
-      done
-
-      tar -cf - $cdirs | gof3r put -b $cache_bucket -k $key/$filename.tar \
-        -m x-amz-server-side-encryption:AES256 --endpoint=s3-$region.amazonaws.com
+      if [[ ${overwrite} == "false" ]] && aws --region=${region} s3 ls ${s3_full_path} > /dev/null 2>&1; then
+        echo "${s3_full_path} already exists"
+        exit 0
+      else
+        tar -czf - ${folders//,/ } | aws --region=${region} s3 cp --sse aws:kms - ${s3_full_path}
+      fi
     ;;
+
     *)
       echo "-- Supported modes:
               pull - restore cache from S3.
